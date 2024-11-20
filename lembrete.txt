@@ -1,0 +1,2 @@
+# celery -A weathermaps flower --port=5555                 COMANDO PARA EXECUTAR PRIMEIRO O CELERY
+# entrar pela porta http://127.0.0.1:5555 e não a http://0.0.0.0:5555

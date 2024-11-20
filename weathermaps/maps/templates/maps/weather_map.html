@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Maps</title>
+    {% load static %}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 28px;
+            color: #333;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #container {
+            display: flex;
+            flex-wrap: wrap;
+            margin: 20px auto;
+            max-width: 1200px;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        #map {
+            flex: 2;
+            min-width: 600px;
+            height: 500px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        #weatherDetails {
+            flex: 1;
+            min-width: 300px;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        label {
+            font-size: 18px;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        select, input[type="text"] {
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            appearance: none;
+            outline: none;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            margin: 10px auto;
+        }
+
+        select:focus, input[type="text"]:focus {
+            border-color: #007BFF;
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
+        }
+
+        select:hover, input[type="text"]:hover {
+            border-color: #0056b3;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            max-width: 300px;
+            margin: 20px auto 10px;
+            padding: 12px;
+            font-size: 16px;
+            background: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        #selectedCoordinates, #locationInfo {
+            font-size: 16px;
+            margin-top: 10px;
+            color: #333;
+        }
+
+        .data-box {
+            margin-top: 20px;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .data-box p {
+            margin: 5px 0;
+            line-height: 1.6;
+        }
+
+        .data-box p span {
+            font-weight: bold;
+            color: #555;
+        }
+
+        #loading {
+            display: none;
+            text-align: center;
+            font-size: 14px;
+            color: #555;
+            margin-top: 10px;
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            #container {
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
+            }
+
+            #map {
+                width: 90%;
+                min-width: auto;
+                height: 400px;
+            }
+
+            #weatherDetails {
+                width: 90%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 20px;
+                margin: 15px 0;
+            }
+
+            select, input[type="text"] {
+                font-size: 14px;
+                padding: 8px;
+            }
+
+            button {
+                font-size: 14px;
+                padding: 10px;
+            }
+
+            #map {
+                height: 300px;
+            }
+        }
+    </style>    
+</head>
+<body>
+    <h1>Weather Maps</h1>
+    <div style="text-align: center;">
+        <label for="layerSelect">Escolha uma camada meteorológica:</label>
+        <select id="layerSelect">
+            <option value="clouds_new">Clouds</option>
+            <option value="precipitation_new">Precipitation</option>
+            <option value="pressure_new">Pressure</option>
+            <option value="wind_new">Wind</option>
+            <option value="temp_new">Temperature</option>
+        </select>
+    </div>
+
+    <div style="text-align: center; margin: 20px 0;">
+        <label>Buscar por coordenadas:</label>
+        <input type="text" id="latInput" placeholder="Latitude" />
+        <input type="text" id="lngInput" placeholder="Longitude" />
+        <button onclick="searchCoordinates()">Buscar Coordenadas</button>
+    </div>
+
+    <div id="container">
+        <!-- Div para o mapa -->
+        <div id="map"></div>
+
+        <!-- Div para exibir os dados -->
+        <div id="weatherDetails">
+            <h3>Detalhes do Clima</h3>
+            <p id="selectedCoordinates">Nenhuma coordenada selecionada.</p>
+            <p id="locationInfo">Nenhum local selecionado.</p>
+            <div class="data-box">
+                <p><strong>Temperatura:</strong> <span id="temp">-</span>°C</p>
+                <p><strong>Clima:</strong> <span id="weather">-</span></p>
+                <p><strong>Umidade:</strong> <span id="humidity">-</span>%</p>
+                <p><strong>Velocidade do Vento:</strong> <span id="wind">-</span> m/s</p>
+                <p><strong>Precipitação:</strong> <span id="precipitation">-</span> mm</p>
+            </div>
+            <p id="loading">Buscando dados...</p>
+            <button id="savePointBtn" onclick="saveFixedPoint()">Salvar Ponto</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        const apiKey = "{{ api_key }}";
+
+        const mapBounds = [[-85, -180], [85, 180]];
+        const map = L.map('map', { maxBounds: mapBounds, maxBoundsViscosity: 1.0 }).setView([0, 0], 2);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: 'Map data &copy; OpenStreetMap', noWrap: true }).addTo(map);
+
+        let weatherLayer = L.tileLayer(`https://tile.openweathermap.org/map/clouds_new/{z}/{x}/{y}.png?appid=${apiKey}`);
+        weatherLayer.addTo(map);
+
+        document.getElementById('layerSelect').addEventListener('change', function (event) {
+            const selectedLayer = event.target.value;
+            map.removeLayer(weatherLayer);
+            weatherLayer = L.tileLayer(`https://tile.openweathermap.org/map/${selectedLayer}/{z}/{x}/{y}.png?appid=${apiKey}`);
+            weatherLayer.addTo(map);
+        });
+
+        let fixedPoint = null;
+
+        async function fetchWeatherData(lat, lng) {
+            const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${apiKey}&units=metric`;
+            const reverseGeocodeUrl = `https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lng}&limit=1&appid=${apiKey}`;
+
+            try {
+                document.getElementById('loading').style.display = 'block';
+                const weatherResponse = await fetch(weatherUrl);
+                const weatherData = await weatherResponse.json();
+
+                const locationResponse = await fetch(reverseGeocodeUrl);
+                const locationData = await locationResponse.json();
+
+                const locationName = locationData[0] ? `${locationData[0].name}, ${locationData[0].state || ''}, ${locationData[0].country}` : 'Local não encontrado';
+
+                document.getElementById('temp').innerText = weatherData.main.temp || '-';
+                document.getElementById('weather').innerText = weatherData.weather[0].description || '-';
+                document.getElementById('humidity').innerText = weatherData.main.humidity || '-';
+                document.getElementById('wind').innerText = weatherData.wind.speed || '-';
+                document.getElementById('precipitation').innerText = weatherData.rain ? weatherData.rain['1h'] || 0 : 0;
+                document.getElementById('locationInfo').innerText = locationName;
+            } catch (error) {
+                console.error('Erro:', error);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        map.on('click', function (event) {
+            const { lat, lng } = event.latlng;
+            if (fixedPoint) map.removeLayer(fixedPoint);
+            fixedPoint = L.marker([lat, lng]).addTo(map);
+            document.getElementById('selectedCoordinates').innerText = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+            fetchWeatherData(lat, lng);
+        });
+
+        async function searchCoordinates() {
+            const latInput = document.getElementById('latInput').value;
+            const lngInput = document.getElementById('lngInput').value;
+
+            if (!latInput || !lngInput) {
+                alert('Por favor, insira valores válidos para latitude e longitude.');
+                return;
+            }
+
+            const lat = parseFloat(latInput);
+            const lng = parseFloat(lngInput);
+
+            if (isNaN(lat) || isNaN(lng)) {
+                alert('Por favor, insira valores numéricos para latitude e longitude.');
+                return;
+            }
+
+            map.setView([lat, lng], 10);
+
+            if (fixedPoint) map.removeLayer(fixedPoint);
+            fixedPoint = L.marker([lat, lng]).addTo(map);
+
+            document.getElementById('selectedCoordinates').innerText = `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`;
+            fetchWeatherData(lat, lng);
+        }
+
+        async function saveFixedPoint() {
+            if (!fixedPoint) {
+                alert('Por favor, selecione um ponto no mapa primeiro.');
+                return;
+            }
+
+            const { lat, lng } = fixedPoint.getLatLng();
+            const loadingElement = document.getElementById('loading');
+            const saveButton = document.getElementById('savePointBtn');
+
+            try {
+                loadingElement.style.display = 'block';
+                saveButton.disabled = true;
+
+                const response = await fetch('/maps/save-point/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                    body: JSON.stringify({ lat, lng }),
+                });
+
+                const data = await response.json();
+                alert(data.success ? 'Ponto salvo com sucesso!' : `Erro ao salvar: ${data.error || 'Erro desconhecido'}`);
+            } catch (error) {
+                console.error('Erro ao salvar ponto:', error);
+                alert('Não foi possível salvar o ponto.');
+            } finally {
+                loadingElement.style.display = 'none';
+                saveButton.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
