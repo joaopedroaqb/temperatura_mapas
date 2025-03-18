@@ -1,0 +1,12 @@
+Criar a vende caso não tenha
+➜  ~ python -m venv .venv
+
+Para usar a venv
+➜  ~ source .venv/bin/activate
+
+Rodar o projeto Django
+➜  ~ python manage.py runserver
+
+Rodar celery
+➜  ~ celery -A weather_maps worker -l INFO
+➜  ~ celery -A weather_maps beat --loglevel=info

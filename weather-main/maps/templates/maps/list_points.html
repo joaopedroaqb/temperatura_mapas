@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Pontos Registrados</title>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 400px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Todos os Pontos Registrados</h1>
+
+    <div id="map"></div>
+    
+    <h2>Detalhes dos Pontos:</h2>
+    <ul>
+        {% for point in points %}
+            <li>
+                <b>{{ point.name }}</b> - {{ point.city }}<br>
+                Latitude: {{ point.latitude }}, Longitude: {{ point.longitude }}<br>
+                Clima: {{ point.climate }}, Temperatura: {{ point.temperature }}°C, Umidade: {{ point.humidity }}%, Vento: {{ point.wind_speed }} m/s, Precipitação: {{ point.precipitation }} mm
+                <br>
+                <a href="{% url 'point_details' point.id %}">Ver Detalhes</a>
+            </li>
+        {% endfor %}
+    </ul>
+    <a href="{% url 'register_point' %}">Registrar</a>
+    <span id="points-data">
+        {{ points|json_script:"pointsData" }}
+    </span>
+   
+
+    <script>
+        // Inicializa o mapa
+        const map = L.map('map').setView([0, 0], 2);
+
+        // Adiciona o mapa base do OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        }).addTo(map);
+
+        // Recupera os dados dos pontos registrados
+        const pointText = document.getElementById('points-data').textContent; // Obtém o texto do elemento
+        const validJsonText = pointText.replace(/'/g, '"');
+        const points = JSON.parse(validJsonText);
+        console.log(points)
+        // Adiciona marcadores para cada ponto registrado
+        points.forEach(point => {
+            L.marker([point.latitude, point.longitude]).addTo(map)
+                .bindPopup(`
+                    <b>${point.name}</b><br>
+                    Clima: ${point.climate}<br>
+                    Temperatura: ${point.temperature}°C<br>
+                    Umidade: ${point.humidity}%<br>
+                    Vento: ${point.wind_speed} m/s
+                `);
+        });
+    </script>
+</body>
+</html>

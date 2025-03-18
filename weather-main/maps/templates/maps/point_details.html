@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Detalhes do Ponto</title>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 400px;
+            margin: 20px 0;
+        }
+        table {
+            border-collapse: collapse;
+            width: 80%;
+            margin: 20px auto;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .button-container {
+            text-align: center;
+            margin: 20px;
+        }
+        .button-container a {
+            margin: 0 10px;
+            padding: 10px 20px;
+            background-color: #007BFF;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .button-container a:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Detalhes do Ponto</h1>
+
+    <!-- Tabela para exibir os dados -->
+    <table>
+        <tr>
+            <th>Nome</th>
+            <th>Cidade</th>
+            <th>Latitude</th>
+            <th>Longitude</th>
+            <th>Clima</th>
+            <th>Temperatura (°C)</th>
+            <th>Umidade (%)</th>
+            <th>Vento (m/s)</th>
+            <th>Precipitação (mm)</th>
+            <th>Data e Hora</th>
+        </tr>
+        {% for detail in point.details %}
+        <tr>
+            <td>{{ point.name }}</td>
+            <td>{{ point.city }}</td>
+            <td>{{ point.latitude }}</td>
+            <td>{{ point.longitude }}</td>
+            <td>{{ detail.climate }}</td>
+            <td>{{ detail.temperature }}</td>
+            <td>{{ detail.humidity }}</td>
+            <td>{{ detail.wind_speed }}</td>
+            <td>{{ detail.precipitation }}</td>
+            <td>{{ detail.created_at }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <!-- Div do mapa -->
+    <div id="map"></div>
+
+    <div class="button-container">
+        <a href="{% url 'register_point' %}">Registrar Ponto</a>
+        <a href="{% url 'list_points' %}">Listar Pontos</a>
+    </div>
+
+    <script>
+        // Inicializa o mapa centrado no ponto
+        const map = L.map('map').setView([{{ point.latitude }}, {{ point.longitude }}], 10);
+
+        // Adiciona o mapa base do OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        // Adiciona o marcador do ponto
+        const marker = L.marker([{{ point.latitude }}, {{ point.longitude }}]).addTo(map);
+        marker.bindPopup(`<b>{{ point.name }}</b><br>Clima: {{ point.details.0.climate }}<br>Temperatura: {{ point.details.0.temperature }}°C<br>Vento: {{ point.details.0.wind_speed }} m/s`).openPopup();
+    </script>
+</body>
+</html>
